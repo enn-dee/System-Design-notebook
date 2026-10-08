@@ -1,0 +1,563 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>System Design Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Kalam:wght@400;700&display=swap">
+<style>
+/* Layout: ruled notebook pages, one page per video, grouped basic -> advanced */
+:root{
+  --paper:#f6f9fc; --rule:#cddcec; --ink:#1c2b4d; --margin:#d6564c;
+  --pen2:#1d7a5f; --hl:rgba(255,214,64,.55); --hl2:rgba(120,200,255,.45);
+  --bar:#eaf1f8; --muted:#5b6b8c; --shadow:rgba(20,40,80,.12);
+  --hand:'Caveat','Segoe Print','Bradley Hand',cursive;
+  --body:'Kalam','Segoe Print','Comic Sans MS',cursive;
+  --ln:32px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#1b2327; --rule:#2a363c; --ink:#e7e9e1; --margin:#d9695f;
+  --pen2:#6fd0a8; --hl:rgba(255,205,60,.32); --hl2:rgba(90,170,230,.35);
+  --bar:#222d33; --muted:#9aa9ae; --shadow:rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1b2327; --rule:#2a363c; --ink:#e7e9e1; --margin:#d9695f;
+  --pen2:#6fd0a8; --hl:rgba(255,205,60,.32); --hl2:rgba(90,170,230,.35);
+  --bar:#222d33; --muted:#9aa9ae; --shadow:rgba(0,0,0,.4); color-scheme:dark}
+body{background:var(--bar);color:var(--ink);font-family:var(--body);font-size:18px;line-height:var(--ln);padding-inline:16px;padding-block:0 48px}
+*{box-sizing:border-box}
+.wrap{max-width:780px;margin-inline:auto}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bar);padding-block:10px;margin-inline:-16px;padding-inline:16px;border-bottom:2px solid var(--rule)}
+nav .row{display:flex;gap:8px;overflow-x:auto;max-width:780px;margin-inline:auto;scrollbar-width:thin}
+nav a{flex:none;font-family:var(--hand);font-size:21px;line-height:1;color:var(--ink);text-decoration:none;border:2px solid var(--ink);border-radius:255px 18px 225px 18px/18px 225px 18px 255px;padding:5px 12px}
+nav a:hover,nav a:focus-visible{background:var(--hl);outline:none}
+header.top{padding-block:28px 12px}
+header.top h1{font-family:var(--hand);font-size:clamp(40px,9vw,64px);line-height:1.05;margin:0;font-weight:700;text-wrap:balance}
+header.top p{margin:6px 0 0;color:var(--muted);font-size:16px;line-height:26px}
+.note{border:2px dashed var(--muted);border-radius:12px;padding:10px 14px;margin-block:14px;font-size:15.5px;line-height:25px;color:var(--ink)}
+.part{font-family:var(--hand);font-size:34px;font-weight:700;margin:34px 0 4px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.part small{font-size:20px;color:var(--pen2);font-weight:500}
+.pg{position:relative;background-color:var(--paper);
+  background-image:linear-gradient(to right,transparent 52px,var(--margin) 52px,var(--margin) 54px,transparent 54px),repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--ln) - 1px),var(--rule) calc(var(--ln) - 1px),var(--rule) var(--ln));
+  background-position:0 0,0 14px;
+  padding:14px 18px 22px 72px;margin-block:18px;border-radius:4px;box-shadow:0 2px 0 var(--rule),0 8px 18px var(--shadow);min-width:0;scroll-margin-top:72px}
+.pg:before{content:"";position:absolute;left:16px;top:0;bottom:0;width:14px;background:radial-gradient(circle at 7px 34px,var(--bar) 6px,transparent 7px) 0 0/14px 96px repeat-y}
+.vt{display:flex;align-items:flex-start;gap:12px;justify-content:space-between;flex-wrap:wrap;margin-bottom:2px}
+.pg h2{font-family:var(--hand);font-weight:700;font-size:clamp(28px,6vw,38px);line-height:36px;margin:0;text-wrap:balance;min-width:0}
+.pg h2 span{color:var(--margin)}
+.pg h3{font-family:var(--hand);font-size:25px;line-height:var(--ln);margin:var(--ln) 0 0;color:var(--pen2);font-weight:700}
+.pg p{margin:0 0 var(--ln)}
+.pg ul{margin:0;padding-left:24px}
+.pg li{margin:0;padding-left:2px}
+.pg li::marker{color:var(--margin);content:"\2192  "}
+.pg ul ul li::marker{content:"\2022  ";color:var(--pen2)}
+mark{background:linear-gradient(transparent 38%,var(--hl) 38%,var(--hl) 92%,transparent 92%);color:inherit;padding-inline:2px}
+mark.b{background:linear-gradient(transparent 38%,var(--hl2) 38%,var(--hl2) 92%,transparent 92%)}
+b{font-weight:700}
+code{font-family:var(--body);border-bottom:2px dotted var(--pen2)}
+.rem,.iq{margin-block:var(--ln) 0;padding:6px 14px;border:2.5px solid var(--ink);border-radius:255px 14px 225px 14px/14px 225px 14px 255px;position:relative;background:var(--paper)}
+.rem{border-color:var(--margin)}
+.rem:before,.iq:before{font-family:var(--hand);font-size:23px;font-weight:700;display:block;line-height:30px}
+.rem:before{content:"Remember";color:var(--margin)}
+.iq{border-color:var(--pen2)}
+.iq:before{content:"Say this in an interview";color:var(--pen2)}
+.rem p,.iq p{margin:0}
+.scroll{overflow-x:auto;margin-block:var(--ln) 0}
+table{border-collapse:collapse;min-width:480px;width:100%;font-size:16px;line-height:26px}
+th,td{border:2px solid var(--ink);padding:4px 10px;text-align:left;vertical-align:top}
+th{font-family:var(--hand);font-size:22px;background:var(--hl2)}
+svg.fig{display:block;width:100%;max-width:560px;height:auto;margin:var(--ln) auto 0;overflow:visible}
+.d{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.a{fill:none;stroke:var(--margin);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.g{fill:none;stroke:var(--pen2);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.f{fill:var(--hl);stroke:var(--ink);stroke-width:2.4;stroke-linejoin:round}
+.t{font-family:var(--hand);fill:var(--ink);font-size:21px}
+.ts{font-family:var(--hand);fill:var(--muted);font-size:17px}
+.tr{font-family:var(--hand);fill:var(--margin);font-size:21px}
+.tg{font-family:var(--hand);fill:var(--pen2);font-size:21px}
+.wob{filter:url(#wob)}
+button.done{font-family:var(--hand);font-size:20px;line-height:1;background:transparent;color:var(--ink);border:2px solid var(--ink);border-radius:255px 14px 225px 14px/14px 225px 14px 255px;padding:6px 12px;cursor:pointer}
+button.done[aria-pressed="true"]{background:var(--hl);border-color:var(--pen2)}
+button.done:focus-visible,nav a:focus-visible{outline:3px solid var(--pen2);outline-offset:2px}
+.cheat{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0 24px}
+.cheat div{min-width:0}
+.todo{color:var(--muted)}
+@media (max-width:520px){
+  body{font-size:17px}
+  .pg{padding:12px 12px 20px 46px;background-image:linear-gradient(to right,transparent 30px,var(--margin) 30px,var(--margin) 32px,transparent 32px),repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--ln) - 1px),var(--rule) calc(var(--ln) - 1px),var(--rule) var(--ln))}
+  .pg:before{left:6px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wob"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="context-stroke" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <h1>System Design Notebook</h1>
+  <p>Gaurav Sen's System Design playlist, one page per video, from basics to advanced. Tap "watched" on a page to tick it off.</p>
+  <div class="note">These notes are written from the topics each video covers, not from its transcript, so numbers and examples can differ from what he says. Use them as a revision layer on top of watching. Video titles marked <b>?</b> are slots whose exact title I could not confirm.</div>
+</header>
+
+<nav aria-label="Videos"><div class="row">
+  <a href="#v1">1 Primer</a><a href="#v2">2 Scaling</a><a href="#v3">3 Load balancing</a><a href="#v4">4 Consistent hashing</a><a href="#v5">5 Message queue</a><a href="#v6">6 Microservices</a><a href="#v7">7 Sharding</a><a href="#v8">8 Caching</a><a href="#vx">? CDN, Pub/Sub, NoSQL</a><a href="#v-tinder">Tinder</a><a href="#v-insta">Instagram</a><a href="#v-wa">WhatsApp</a><a href="#v-nf">Netflix</a><a href="#v-cap">Estimation</a><a href="#v-tt">TikTok</a><a href="#v-tips">Tips</a><a href="#cheat">Cheat sheet</a>
+</div></nav>
+
+<div class="part">Part A <small>foundations: why and how systems grow</small></div>
+
+<!-- ============ 1 ============ -->
+<section class="pg" id="v1">
+  <div class="vt"><h2><span>1.</span> System Design Primer: how to start with distributed systems</h2><button class="done" data-id="v1" aria-pressed="false">watched</button></div>
+  <h3>The story of one server</h3>
+  <ul>
+    <li>Start: one machine runs the app and the database. Works for hundreds of users.</li>
+    <li>It breaks in two ways: it is slow when load grows, and when it dies everything is down (<mark>single point of failure</mark>).</li>
+    <li>Fix step by step: split the DB from the app, add more app servers, put a <b>load balancer</b> in front, add a <b>cache</b>, add a <b>queue</b> for slow work, <b>replicate</b> then <b>shard</b> the DB.</li>
+  </ul>
+  <h3>Words to own</h3>
+  <ul>
+    <li><b>Scalability</b>: handles more load by adding resources.</li>
+    <li><b>Availability</b>: fraction of time the system answers (99.9% = about 8.8 hours down per year).</li>
+    <li><b>Latency</b>: time for one request. <b>Throughput</b>: requests per second.</li>
+    <li><b>Fault tolerance</b>: keeps working when parts fail.</li>
+    <li><b>Consistency</b>: every reader sees the same data.</li>
+  </ul>
+  <div class="rem"><p>Every later video is one tool that fixes one limit of the single server. Ask "which limit does this tool fix, and what does it cost me?"</p></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section class="pg" id="v2">
+  <div class="vt"><h2><span>2.</span> System Design Basics: Horizontal vs. Vertical Scaling</h2><button class="done" data-id="v2" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 200" role="img" aria-label="Vertical scaling: one bigger server. Horizontal scaling: many servers.">
+    <g class="wob">
+      <rect class="d" x="40" y="90" width="60" height="70" rx="4"/><text class="ts" x="30" y="182">before</text>
+      <path class="a" d="M110 125 L150 125" marker-end="url(#ah)"/>
+      <rect class="f" x="160" y="30" width="90" height="130" rx="4"/><text class="t" x="172" y="102">BIG</text>
+      <text class="tr" x="120" y="22">vertical: scale up</text>
+      <rect class="d" x="330" y="110" width="50" height="50" rx="4"/><rect class="d" x="390" y="110" width="50" height="50" rx="4"/><rect class="d" x="450" y="110" width="50" height="50" rx="4"/>
+      <rect class="d" x="360" y="50" width="50" height="50" rx="4"/><rect class="d" x="420" y="50" width="50" height="50" rx="4"/>
+      <text class="tg" x="330" y="22">horizontal: scale out</text>
+    </g>
+  </svg>
+  <div class="scroll"><table>
+    <tr><th></th><th>Vertical (scale up)</th><th>Horizontal (scale out)</th></tr>
+    <tr><td>How</td><td>Bigger CPU, RAM, disk</td><td>More machines</td></tr>
+    <tr><td>Calls between parts</td><td>In-process, fast</td><td>Network calls (RPC), slower, can fail</td></tr>
+    <tr><td>Failure</td><td>One machine, one point of failure</td><td>Survives losing a node</td></tr>
+    <tr><td>Limit</td><td>Hardware ceiling, cost rises steeply</td><td>Almost none, commodity boxes</td></tr>
+    <tr><td>Data</td><td>Consistent, one copy</td><td>Needs sharding, replication, consistency work</td></tr>
+    <tr><td>Needs</td><td>Downtime to upgrade</td><td>Load balancer, service discovery</td></tr>
+  </table></div>
+  <div class="iq"><p>"I would scale vertically first because it is simple, then go horizontal once I hit the hardware limit or need fault tolerance. Horizontal costs me network latency and consistency work."</p></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section class="pg" id="v3">
+  <div class="vt"><h2><span>3.</span> What is Load Balancing?</h2><button class="done" data-id="v3" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 220" role="img" aria-label="Clients send requests to a load balancer which spreads them over three servers.">
+    <g class="wob">
+      <circle class="d" cx="40" cy="50" r="14"/><circle class="d" cx="40" cy="110" r="14"/><circle class="d" cx="40" cy="170" r="14"/>
+      <path class="d" d="M58 52 L170 100" marker-end="url(#ah)"/><path class="d" d="M58 110 L170 110" marker-end="url(#ah)"/><path class="d" d="M58 168 L170 120" marker-end="url(#ah)"/>
+      <rect class="f" x="175" y="80" width="110" height="60" rx="6"/><text class="t" x="188" y="116">Load Balancer</text>
+      <path class="a" d="M290 100 L400 50" marker-end="url(#ah)"/><path class="a" d="M290 110 L400 110" marker-end="url(#ah)"/><path class="a" d="M290 120 L400 170" marker-end="url(#ah)"/>
+      <rect class="d" x="405" y="30" width="110" height="42" rx="4"/><text class="t" x="430" y="58">Server 1</text>
+      <rect class="d" x="405" y="90" width="110" height="42" rx="4"/><text class="t" x="430" y="118">Server 2</text>
+      <rect class="d" x="405" y="150" width="110" height="42" rx="4"/><text class="t" x="430" y="178">Server 3</text>
+    </g>
+  </svg>
+  <h3>Why</h3>
+  <ul><li>Spread traffic so no server is overloaded, remove the single server as a failure point, and add or remove servers without clients knowing.</li></ul>
+  <h3>How it picks a server</h3>
+  <ul>
+    <li><b>Round robin</b>: 1, 2, 3, 1, 2, 3. Simple, ignores load.</li>
+    <li><b>Weighted round robin</b>: bigger machines get more turns.</li>
+    <li><b>Least connections</b> / <b>least response time</b>: send to the least busy.</li>
+    <li><b>IP hash</b>: same client goes to the same server (cheap stickiness).</li>
+    <li><b>Consistent hashing</b>: for caches and stateful servers (video 4).</li>
+  </ul>
+  <h3>Details that get asked</h3>
+  <ul>
+    <li><b>Health checks</b>: LB pings servers and stops sending to dead ones.</li>
+    <li><b>Layer 4</b> (TCP/IP, fast, blind to content) vs <b>Layer 7</b> (HTTP, can route by URL, header, cookie).</li>
+    <li><b>Sticky sessions</b> vs keeping servers stateless and putting session data in Redis. Stateless is better.</li>
+    <li>The LB is itself a single point of failure, so run two (active-passive or active-active) and use DNS in front.</li>
+    <li>Tools: Nginx, HAProxy, AWS ELB, hardware appliances.</li>
+  </ul>
+  <div class="rem"><p>Load balancers work best in front of <mark>stateless</mark> servers. State lives in a DB or cache.</p></div>
+</section>
+
+<div class="part">Part B <small>data: spreading, storing and speeding it up</small></div>
+
+<!-- ============ 4 ============ -->
+<section class="pg" id="v4">
+  <div class="vt"><h2><span>4.</span> What is Consistent Hashing and where is it used?</h2><button class="done" data-id="v4" aria-pressed="false">watched</button></div>
+  <h3>The problem</h3>
+  <ul>
+    <li>Spread keys over N servers with <code>hash(key) % N</code>.</li>
+    <li>Change N (add or lose a server) and <mark>almost every key maps somewhere new</mark>. A cache loses nearly everything and the DB gets flooded.</li>
+  </ul>
+  <svg class="fig" viewBox="0 0 560 230" role="img" aria-label="Hash ring with four servers A to D and a key that walks clockwise to the next server.">
+    <g class="wob">
+      <circle class="d" cx="150" cy="115" r="82"/>
+      <circle class="f" cx="150" cy="33" r="9"/><text class="t" x="144" y="22">A</text>
+      <circle class="f" cx="232" cy="115" r="9"/><text class="t" x="248" y="122">B</text>
+      <circle class="f" cx="150" cy="197" r="9"/><text class="t" x="144" y="224">C</text>
+      <circle class="f" cx="68" cy="115" r="9"/><text class="t" x="40" y="122">D</text>
+      <circle cx="208" cy="57" r="5" fill="var(--margin)"/><text class="tr" x="214" y="50">key k</text>
+      <path class="a" d="M212 63 Q232 85 232 98" marker-end="url(#ah)"/>
+      <text class="ts" x="110" y="108">hash space</text><text class="ts" x="112" y="128">0 .. 2^32</text>
+    </g>
+    <g>
+      <text class="tg" x="320" y="50">1. hash servers onto a ring</text>
+      <text class="tg" x="320" y="82">2. hash the key onto the ring</text>
+      <text class="tg" x="320" y="114">3. walk clockwise: first server owns it</text>
+      <text class="tr" x="320" y="160">add or remove a server and only</text>
+      <text class="tr" x="320" y="184">its neighbour's keys move (about K/N)</text>
+    </g>
+  </svg>
+  <h3>Virtual nodes</h3>
+  <ul>
+    <li>With few servers the ring is lopsided. Give each server many points (A1, A2, A3...) so load evens out and a failed server's keys spread over many survivors.</li>
+    <li>A stronger machine gets more virtual nodes.</li>
+  </ul>
+  <h3>Used in</h3>
+  <ul><li>Distributed caches (Memcached clients), Cassandra, DynamoDB, CDNs, load balancers, sharded databases.</li></ul>
+  <div class="iq"><p>"Plain modulo hashing reshuffles nearly all keys when the cluster size changes. A hash ring with virtual nodes moves only about K/N keys."</p></div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section class="pg" id="v5">
+  <div class="vt"><h2><span>5.</span> What is a Message Queue and where is it used?</h2><button class="done" data-id="v5" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 160" role="img" aria-label="Producers put messages in a queue, consumers take them out.">
+    <g class="wob">
+      <rect class="d" x="10" y="25" width="90" height="38" rx="4"/><text class="t" x="22" y="50">Producer</text>
+      <rect class="d" x="10" y="95" width="90" height="38" rx="4"/><text class="t" x="22" y="120">Producer</text>
+      <path class="a" d="M104 44 L200 70" marker-end="url(#ah)"/><path class="a" d="M104 114 L200 90" marker-end="url(#ah)"/>
+      <rect class="d" x="205" y="60" width="150" height="40" rx="4"/>
+      <rect class="f" x="212" y="67" width="26" height="26"/><rect class="f" x="244" y="67" width="26" height="26"/><rect class="f" x="276" y="67" width="26" height="26"/><rect class="f" x="308" y="67" width="26" height="26"/>
+      <text class="ts" x="248" y="125">queue (FIFO)</text>
+      <path class="g" d="M360 70 L440 44" marker-end="url(#ah)"/><path class="g" d="M360 90 L440 114" marker-end="url(#ah)"/>
+      <rect class="d" x="445" y="25" width="100" height="38" rx="4"/><text class="t" x="455" y="50">Consumer</text>
+      <rect class="d" x="445" y="95" width="100" height="38" rx="4"/><text class="t" x="455" y="120">Consumer</text>
+    </g>
+  </svg>
+  <h3>Why use one</h3>
+  <ul>
+    <li><b>Decouple</b>: producer does not wait for, or even know, the consumer.</li>
+    <li><b>Absorb spikes</b>: queue buffers, consumers work at their own pace.</li>
+    <li><b>Async work</b>: send the email, resize the image, encode the video later.</li>
+    <li><b>Retry</b> failed work. Messages that keep failing go to a <mark>dead letter queue</mark>.</li>
+  </ul>
+  <h3>Things to know</h3>
+  <ul>
+    <li>Delivery: at-most-once, <b>at-least-once</b> (most common, so make consumers idempotent), exactly-once (hard, costly).</li>
+    <li>Ordering holds per partition, not across the whole topic.</li>
+    <li>Scale consumers by adding more, and by adding partitions.</li>
+    <li>Tools: Kafka (log, replayable, very high throughput), RabbitMQ (smart routing), SQS (managed).</li>
+  </ul>
+  <div class="rem"><p>If the user does not need the result immediately, put it on a queue and answer "accepted".</p></div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section class="pg" id="v6">
+  <div class="vt"><h2><span>6.</span> What is a Microservice Architecture and what are its advantages?</h2><button class="done" data-id="v6" aria-pressed="false">watched</button></div>
+  <ul>
+    <li><b>Monolith</b>: one codebase, one deploy, one DB. Easy to start, hard to scale one part or let many teams work in parallel.</li>
+    <li><b>Microservices</b>: many small services, each owns one business capability and its own data, talking over HTTP/gRPC or events.</li>
+  </ul>
+  <h3>Wins</h3>
+  <ul>
+    <li>Deploy and scale each service on its own (scale only "search").</li>
+    <li>A bug or crash stays in one service (fault isolation).</li>
+    <li>Teams own services, pick their own tech.</li>
+  </ul>
+  <h3>Costs</h3>
+  <ul>
+    <li>Every call is a network call: latency, timeouts, partial failure.</li>
+    <li>No cross-service ACID transaction. Use <b>saga</b> (steps plus compensating actions).</li>
+    <li>Harder debugging: need tracing, central logs, monitoring.</li>
+  </ul>
+  <h3>Pieces around them</h3>
+  <ul>
+    <li><b>API gateway</b>: single entry, auth, rate limit, routing.</li>
+    <li><b>Service discovery</b>: how services find each other (Consul, Eureka, Kubernetes DNS).</li>
+    <li><b>Circuit breaker</b>: stop calling a failing service for a while.</li>
+    <li><b>Database per service</b>, async events between services (video 5).</li>
+  </ul>
+  <div class="rem"><p>Start with a well-structured monolith. Split when team size or scaling needs justify the operational cost.</p></div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section class="pg" id="v7">
+  <div class="vt"><h2><span>7.</span> What is Database Sharding?</h2><button class="done" data-id="v7" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 190" role="img" aria-label="A router sends users to shards by key range.">
+    <g class="wob">
+      <rect class="f" x="10" y="70" width="110" height="50" rx="6"/><text class="t" x="22" y="101">Router / app</text>
+      <path class="a" d="M124 82 L220 36" marker-end="url(#ah)"/><path class="a" d="M124 95 L220 95" marker-end="url(#ah)"/><path class="a" d="M124 108 L220 154" marker-end="url(#ah)"/>
+      <ellipse class="d" cx="290" cy="34" rx="62" ry="22"/><text class="t" x="250" y="40">Shard 0</text><text class="ts" x="365" y="40">users A to H</text>
+      <ellipse class="d" cx="290" cy="95" rx="62" ry="22"/><text class="t" x="250" y="101">Shard 1</text><text class="ts" x="365" y="101">users I to P</text>
+      <ellipse class="d" cx="290" cy="156" rx="62" ry="22"/><text class="t" x="250" y="162">Shard 2</text><text class="ts" x="365" y="162">users Q to Z</text>
+    </g>
+  </svg>
+  <ul>
+    <li>Sharding = split one big table across machines by a <b>shard key</b>, each holds a slice. Fixes both storage size and write load.</li>
+    <li>It is <b>horizontal partitioning</b>. Vertical partitioning splits by columns or by feature instead.</li>
+    <li>Not the same as replication: replication copies the same data (for reads and failover), sharding divides different data.</li>
+  </ul>
+  <h3>Ways to pick a shard</h3>
+  <ul>
+    <li><b>Range</b> (A to H): easy, but hot ranges.</li>
+    <li><b>Hash</b> of key: even spread, range queries get hard. Pair with consistent hashing.</li>
+    <li><b>Directory</b> (lookup table): flexible, the table is a new point of failure.</li>
+    <li><b>Geo</b>: users near their data.</li>
+  </ul>
+  <h3>Pain points</h3>
+  <ul>
+    <li>Hot shards (celebrity user), uneven data.</li>
+    <li>Joins and transactions across shards are slow or unsupported.</li>
+    <li>Re-sharding when you outgrow it.</li>
+  </ul>
+  <div class="iq"><p>"I would shard by user id with hashing, replicate each shard for availability, and avoid cross-shard queries by keeping related rows on the same shard."</p></div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section class="pg" id="v8">
+  <div class="vt"><h2><span>8.</span> Caching in distributed systems: a friendly introduction</h2><button class="done" data-id="v8" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 190" role="img" aria-label="Cache aside: app checks cache, on a miss reads the database and fills the cache.">
+    <g class="wob">
+      <rect class="f" x="10" y="70" width="90" height="46" rx="6"/><text class="t" x="34" y="99">App</text>
+      <rect class="d" x="230" y="20" width="120" height="46" rx="6"/><text class="t" x="262" y="49">Cache</text>
+      <rect class="d" x="230" y="125" width="120" height="46" rx="6"/><text class="t" x="270" y="154">DB</text>
+      <path class="g" d="M102 80 L226 46" marker-end="url(#ah)"/><text class="tg" x="108" y="46">1 get</text>
+      <path class="a" d="M102 108 L226 142" marker-end="url(#ah)"/><text class="tr" x="100" y="150">2 miss: read</text>
+      <path class="d" d="M290 124 L290 70" marker-end="url(#ah)"/><text class="ts" x="300" y="100">3 fill</text>
+      <text class="tg" x="380" y="40">hit: return fast</text>
+    </g>
+  </svg>
+  <h3>Where caches sit</h3>
+  <ul><li>Browser, CDN, app memory, a shared cache (Redis, Memcached), DB buffer. Closer to the user is faster.</li></ul>
+  <h3>Write strategies</h3>
+  <ul>
+    <li><b>Cache-aside</b>: app reads cache, on miss loads DB and fills cache. Most common.</li>
+    <li><b>Read-through</b>: cache loads from DB itself.</li>
+    <li><b>Write-through</b>: write cache and DB together. Safe, slower writes.</li>
+    <li><b>Write-back</b>: write cache, flush to DB later. Fast, can lose data.</li>
+    <li><b>Write-around</b>: write DB only, cache fills on read.</li>
+  </ul>
+  <h3>Eviction and trouble</h3>
+  <ul>
+    <li>Eviction: <b>LRU</b> (default), LFU, FIFO, plus <b>TTL</b>.</li>
+    <li>Stale data: invalidate on write or accept a short TTL. "Cache invalidation" is the hard part.</li>
+    <li><b>Stampede</b>: a hot key expires and thousands hit the DB. Use locks, early refresh, jittered TTLs.</li>
+    <li>Distributed cache: spread keys with consistent hashing (video 4) and replicate hot keys.</li>
+  </ul>
+  <div class="rem"><p>Cache what is <mark>read often and changes rarely</mark>. Say how stale data is allowed to be.</p></div>
+</section>
+
+<section class="pg" id="vx">
+  <div class="vt"><h2><span>?</span> Slots I could not confirm: CDN, Pub/Sub, NoSQL</h2><button class="done" data-id="vx" aria-pressed="false">watched</button></div>
+  <p class="todo">The playlist is said to cover these between caching and the case studies. Notes below are generic, check the video titles against your list.</p>
+  <h3>CDN</h3>
+  <ul>
+    <li>Servers spread worldwide that keep copies of static files (images, video, JS) near users. Lower latency, less load on your origin.</li>
+    <li><b>Pull</b>: fetched from origin on first request. <b>Push</b>: you upload ahead of time.</li>
+    <li>Control freshness with cache headers, TTL, versioned file names.</li>
+  </ul>
+  <h3>Publisher / Subscriber</h3>
+  <ul>
+    <li>Publisher sends to a <b>topic</b>, every subscriber gets a copy (queue: one consumer per message).</li>
+    <li>Use for events: "order placed" feeds billing, email, analytics at once. Tools: Kafka topics, Google Pub/Sub, SNS.</li>
+  </ul>
+  <h3>NoSQL</h3>
+  <ul>
+    <li>Types: key-value (Redis, DynamoDB), document (MongoDB), wide-column (Cassandra), graph (Neo4j).</li>
+    <li>Trade strict schema and joins for easy horizontal scale and flexible data. Often <b>eventual consistency</b>.</li>
+    <li>Pick SQL for relations and transactions, NoSQL for huge scale, simple access patterns, flexible shape.</li>
+  </ul>
+  <div class="rem"><p><b>CAP</b>: during a network partition you choose consistency or availability. Many NoSQL stores choose availability.</p></div>
+</section>
+
+<div class="part">Part C <small>case studies: put the tools together</small></div>
+
+<section class="pg" id="v-tinder">
+  <div class="vt"><h2>System Design: Tinder as a microservice architecture</h2><button class="done" data-id="vt" aria-pressed="false">watched</button></div>
+  <h3>Requirements</h3>
+  <ul>
+    <li>Create profile with photos, see nearby profiles, swipe left or right, match when both swipe right, chat after a match.</li>
+  </ul>
+  <h3>Services</h3>
+  <ul>
+    <li><b>Profile service</b>: user data in a DB, photos in object storage behind a CDN.</li>
+    <li><b>Recommendation service</b>: finds nearby users who fit filters. Needs a geo index (geohash or quadtree, search index) and precomputed candidate stacks so swiping is instant.</li>
+    <li><b>Swipe / match service</b>: records swipes; on a right swipe checks if the other person already swiped right, then creates a match. Very write heavy, so shard it by user id.</li>
+    <li><b>Chat service</b>: websocket connections, messages stored per match (see WhatsApp).</li>
+    <li><b>Notification service</b> fed by a queue: "you have a match".</li>
+  </ul>
+  <h3>Points to raise</h3>
+  <ul>
+    <li>Do not show someone twice: keep a seen set per user (a Bloom filter works).</li>
+    <li>Location changes often, so do not shard only by location. Shard users by id, index location separately.</li>
+  </ul>
+</section>
+
+<section class="pg" id="v-insta">
+  <div class="vt"><h2>Designing Instagram: System Design of News Feed</h2><button class="done" data-id="vi" aria-pressed="false">watched</button></div>
+  <h3>Core pieces</h3>
+  <ul>
+    <li>Upload photo (blob storage plus CDN), metadata in a sharded DB, follow graph, feed per user.</li>
+    <li>Read heavy: far more feed reads than posts. Optimise the read path.</li>
+  </ul>
+  <h3>Feed generation: the key choice</h3>
+  <ul>
+    <li><b>Pull (fan-out on read)</b>: build the feed when the user opens the app, merging recent posts of everyone they follow. Cheap to write, slow to read.</li>
+    <li><b>Push (fan-out on write)</b>: when someone posts, push the post id into each follower's feed list in cache. Fast reads, heavy writes.</li>
+    <li><b>Hybrid</b>: push for normal users, pull for celebrities with millions of followers, merge at read time.</li>
+  </ul>
+  <h3>Supporting detail</h3>
+  <ul>
+    <li>Fan-out work runs on queues so posting stays quick.</li>
+    <li>Rank the feed with a score (recency, closeness, engagement), page it with a cursor.</li>
+    <li>Store only post ids in the feed cache, fetch post bodies in a batch.</li>
+  </ul>
+  <div class="iq"><p>"Push for most users, pull for celebrities, merge at read time. That keeps both write fan-out and read latency under control."</p></div>
+</section>
+
+<section class="pg" id="v-wa">
+  <div class="vt"><h2>WhatsApp System Design: Chat Messaging Systems for Interviews</h2><button class="done" data-id="vw" aria-pressed="false">watched</button></div>
+  <h3>Connection</h3>
+  <ul>
+    <li>Clients keep a persistent <b>websocket</b> to a chat server, so the server can push messages instead of the client polling.</li>
+    <li>A session store (Redis or ZooKeeper-like) maps user id to the chat server they are connected to.</li>
+  </ul>
+  <h3>Sending a 1:1 message</h3>
+  <ul>
+    <li>A sends to its chat server, the server looks up B's server and forwards.</li>
+    <li>If B is offline, store the message in a DB and deliver when B reconnects, then delete.</li>
+    <li>Acks drive the ticks: one tick = reached server, two = delivered to device, blue = read.</li>
+    <li>Order messages with a per-chat sequence number or timestamp.</li>
+  </ul>
+  <h3>Groups and media</h3>
+  <ul>
+    <li>Group has a member list, server fans the message out to each member. Cap group size to limit fan-out.</li>
+    <li>Media goes to blob storage, the chat message carries only a link and a key.</li>
+    <li>End-to-end encryption: server relays ciphertext it cannot read.</li>
+    <li>"Last seen" comes from heartbeats on the connection.</li>
+  </ul>
+  <div class="rem"><p>Chat = websocket + session map + durable store for offline users + acks.</p></div>
+</section>
+
+<section class="pg" id="v-nf">
+  <div class="vt"><h2>How Netflix onboards new content: video processing at scale</h2><button class="done" data-id="vn" aria-pressed="false">watched</button></div>
+  <svg class="fig" viewBox="0 0 560 150" role="img" aria-label="Pipeline: upload, split into chunks, encode in parallel, store, push to CDN.">
+    <g class="wob">
+      <rect class="d" x="5" y="50" width="80" height="44" rx="5"/><text class="t" x="18" y="78">Upload</text>
+      <path class="a" d="M88 72 L110 72" marker-end="url(#ah)"/>
+      <rect class="d" x="114" y="50" width="86" height="44" rx="5"/><text class="t" x="124" y="78">Split chunks</text>
+      <path class="a" d="M203 72 L225 72" marker-end="url(#ah)"/>
+      <rect class="f" x="229" y="14" width="110" height="38" rx="5"/><text class="t" x="240" y="40">Encode 1080p</text>
+      <rect class="f" x="229" y="58" width="110" height="38" rx="5"/><text class="t" x="244" y="85">Encode 720p</text>
+      <rect class="f" x="229" y="102" width="110" height="38" rx="5"/><text class="t" x="248" y="129">Encode 480p</text>
+      <path class="a" d="M342 72 L366 72" marker-end="url(#ah)"/>
+      <rect class="d" x="370" y="50" width="80" height="44" rx="5"/><text class="t" x="382" y="78">Storage</text>
+      <path class="a" d="M453 72 L474 72" marker-end="url(#ah)"/>
+      <rect class="d" x="478" y="50" width="76" height="44" rx="5"/><text class="t" x="498" y="78">CDN</text>
+    </g>
+  </svg>
+  <ul>
+    <li>A studio uploads a huge source file. Players need many <b>resolutions, bitrates, codecs</b> for phones, TVs, slow and fast networks.</li>
+    <li>Split the file into chunks so chunks encode <mark>in parallel</mark> on many workers. Work is a graph of tasks (DAG) fed through queues.</li>
+    <li>Run quality checks, then store outputs in object storage.</li>
+    <li>Push popular titles ahead of time to <b>CDN</b> servers near users (Netflix runs its own, Open Connect).</li>
+    <li>Playback uses <b>adaptive bitrate streaming</b> (HLS / DASH): the player switches quality chunk by chunk as bandwidth changes.</li>
+  </ul>
+  <div class="rem"><p>Chunk, parallelise, retry failed chunks, pre-position on the CDN.</p></div>
+</section>
+
+<div class="part">Part D <small>interview craft: estimation and communication</small></div>
+
+<section class="pg" id="v-cap">
+  <div class="vt"><h2>Capacity Planning and Estimation: how much data does YouTube store daily?</h2><button class="done" data-id="vc" aria-pressed="false">watched</button></div>
+  <h3>Method</h3>
+  <ul>
+    <li>State assumptions out loud, round hard, use powers of ten, show the arithmetic.</li>
+    <li>Convert to per second: 1 day is about 86,400 s, roughly 10^5 s.</li>
+  </ul>
+  <h3>Worked example (assumptions are mine)</h3>
+  <ul>
+    <li>Assume 500 hours of video uploaded per minute.</li>
+    <li>500 x 60 x 24 = <mark>720,000 hours per day</mark>.</li>
+    <li>Assume about 1 GB per hour for the stored original: roughly 720 TB per day.</li>
+    <li>Multiply for several encoded resolutions (say x3) and 3 replicas: about 6 PB per day.</li>
+    <li>Do not forget thumbnails and metadata, which are small by comparison.</li>
+  </ul>
+  <h3>Numbers to keep in your head</h3>
+  <ul>
+    <li>Memory read about 100 ns, SSD read about 100 us, disk seek about 10 ms.</li>
+    <li>Same-datacenter round trip about 0.5 ms, across continents about 150 ms.</li>
+    <li>1 KB = 10^3, 1 MB = 10^6, 1 GB = 10^9, 1 TB = 10^12 bytes.</li>
+    <li>Rule of thumb: 1 million requests per day is about 12 per second.</li>
+  </ul>
+  <div class="rem"><p>Interviewers judge your reasoning, not the exact number. Estimate storage, read and write QPS, bandwidth.</p></div>
+</section>
+
+<section class="pg" id="v-tt">
+  <div class="vt"><h2>System Design Interview: TikTok architecture (with sudoCODE)</h2><button class="done" data-id="vtt" aria-pressed="false">watched</button></div>
+  <ul>
+    <li><b>Upload path</b>: client uploads to blob storage, a queue triggers transcoding into several qualities, thumbnails and metadata are written, then the video is pushed to the CDN.</li>
+    <li><b>Feed ("For You")</b>: recommendation is the product. A candidate generator picks a few hundred videos from millions, a ranking model scores them, the feed service returns the top ones.</li>
+    <li>Signals: watch time, likes, shares, replays, follows. Events stream through Kafka into feature stores and training jobs.</li>
+    <li><b>Cold start</b>: show a new video to a small test audience, widen reach if engagement is good.</li>
+    <li><b>Playback</b>: prefetch the next few videos while the user watches, serve chunks from the nearest CDN.</li>
+    <li>Counters (likes, views) are write-heavy: batch them through a queue and aggregate.</li>
+  </ul>
+</section>
+
+<section class="pg" id="v-tips">
+  <div class="vt"><h2>5 Tips for System Design Interviews</h2><button class="done" data-id="vtp" aria-pressed="false">watched</button></div>
+  <p class="todo">Below is the usual framework, check it against what he says in the video.</p>
+  <ul>
+    <li><b>Clarify</b> the problem: functional features, then non-functional needs (scale, latency, availability, consistency).</li>
+    <li><b>Estimate</b> load and storage so design choices have numbers behind them.</li>
+    <li><b>Draw the high level</b>: clients, load balancer, services, DB, cache, queue. Then deep dive on what the interviewer cares about.</li>
+    <li><b>Discuss trade-offs</b> for every choice (SQL vs NoSQL, push vs pull). No answer is free.</li>
+    <li><b>Think aloud</b> and invite feedback. It is a conversation, not an exam.</li>
+  </ul>
+  <p style="margin-top:var(--ln)" class="todo">Video 26 (InterviewReady walkthrough) is a walkthrough of his paid course, so there are no notes for it.</p>
+</section>
+
+<section class="pg" id="cheat">
+  <h2>Cheat sheet: problem to tool</h2>
+  <div class="cheat">
+    <div><h3>One server is slow</h3><ul><li>Scale out + load balancer</li></ul></div>
+    <div><h3>Cache keeps losing keys when nodes change</h3><ul><li>Consistent hashing</li></ul></div>
+    <div><h3>Slow work blocks users</h3><ul><li>Message queue</li></ul></div>
+    <div><h3>DB too big or too many writes</h3><ul><li>Sharding (+ replicas for reads)</li></ul></div>
+    <div><h3>Same reads again and again</h3><ul><li>Cache, CDN for static files</li></ul></div>
+    <div><h3>Many teams, parts scale differently</h3><ul><li>Microservices</li></ul></div>
+    <div><h3>Real-time messages</h3><ul><li>Websockets + session map</li></ul></div>
+    <div><h3>Heavy file processing</h3><ul><li>Chunk + parallel workers + queue</li></ul></div>
+    <div><h3>Celebrity or hot key</h3><ul><li>Hybrid push/pull, replicate hot keys</li></ul></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var KEY="sd-notebook-watched", saved={};
+  try{ saved=JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){}
+  document.querySelectorAll("button.done").forEach(function(b){
+    var id=b.getAttribute("data-id");
+    if(saved[id]) b.setAttribute("aria-pressed","true");
+    b.addEventListener("click",function(){
+      var on=b.getAttribute("aria-pressed")!=="true";
+      b.setAttribute("aria-pressed",on?"true":"false");
+      saved[id]=on;
+      try{ localStorage.setItem(KEY,JSON.stringify(saved)); }catch(e){}
+    });
+  });
+})();
+</script>
+
+</body></html>
